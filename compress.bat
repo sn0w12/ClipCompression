@@ -60,10 +60,11 @@ if "%reduce_fps%"=="1" (
         -rc:v vbr ^
         -cq:v 23 ^
         -r 30 ^
+        -filter_complex "[0:a:0][0:a:1][0:a:2][0:a:3]amix=inputs=4:duration=first:weights=1 1 1 1[aout]" ^
+        -map 0:v:0 ^
+        -map "[aout]" ^
         -c:a aac ^
         -b:a %audio_bitrate%k ^
-        -map 0:v:0 ^
-        -map 0:a:0? ^
         "%output%"
 ) else (
     ffmpeg -i "%input%" -y %start_param% %duration_param% ^
@@ -74,10 +75,11 @@ if "%reduce_fps%"=="1" (
         -preset %preset% ^
         -rc:v vbr ^
         -cq:v 23 ^
+        -filter_complex "[0:a:0][0:a:1][0:a:2][0:a:3]amix=inputs=4:duration=first:weights=1 1 1 1[aout]" ^
+        -map 0:v:0 ^
+        -map "[aout]" ^
         -c:a aac ^
         -b:a %audio_bitrate%k ^
-        -map 0:v:0 ^
-        -map 0:a:0? ^
         "%output%"
 )
 
