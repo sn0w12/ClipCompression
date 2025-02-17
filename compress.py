@@ -77,25 +77,59 @@ def get_video_info(input_path, start_time=None, duration=None):
         raise Exception(f"Error in get_video_info: {str(e)}")
 
 
-def calculate_bitrate(duration, width, height, target_size_mb=10, audio_bitrate_kb=128):
+def calculate_bitrate(duration, width, height, target_size_mb=9, audio_bitrate_kb=128):
     try:
         # Calculate target size in bits
         target_size_bits = target_size_mb * 8 * 1024 * 1024
         audio_size_bits = duration * audio_bitrate_kb * 1024
 
-        # Leave headroom for container overhead
-        available_bits = target_size_bits * 0.95 - audio_size_bits
+        # Reduce overhead margin to just 1%
+        available_bits = target_size_bits * 0.99 - audio_size_bits
 
         # Calculate video bitrate
         video_bitrate_kb = int(available_bits / (duration * 1024))
 
-        # Adjust bitrate based on resolution
-        resolution_factor = (width * height) / (1920 * 1080)
-        video_bitrate_kb = int(video_bitrate_kb * min(resolution_factor, 1.5))
+        # Adjust bitrate based on resolution with a more aggressive scale
+        resolution = width * height
+        if resolution <= 1280 * 720:  # 720p or less
+            resolution_factor = 0.9
+        elif resolution <= 1920 * 1080:  # 1080p
+            resolution_factor = 1.1
+        else:  # 2K/4K
+            resolution_factor = 1.3
 
-        # Set minimum and maximum bitrates
-        video_bitrate_kb = max(video_bitrate_kb, 500)  # minimum 500Kbps
-        video_bitrate_kb = min(video_bitrate_kb, 8000)  # maximum 8000Kbps
+        video_bitrate_kb = int(video_bitrate_kb * resolution_factor)
+
+        # Higher minimum bitrates to prevent over-compression
+        min_bitrate = {
+            1280 * 720: 2000,  # 720p minimum 2000Kbps
+            1920 * 1080: 3000,  # 1080p minimum 3000Kbps
+            2560 * 1440: 4000,  # 2K minimum 4000Kbps
+            3840 * 2160: 6000,  # 4K minimum 6000Kbps
+        }
+
+        # Find appropriate minimum bitrate
+        min_bitrate_kb = 2000  # higher default minimum
+        for res, bitrate in sorted(min_bitrate.items()):
+            if resolution <= res:
+                min_bitrate_kb = bitrate
+                break
+
+        # Calculate target bitrate based on duration
+        target_bitrate_kb = int((target_size_bits * 0.99) / (duration * 1024))
+
+        # Set maximum bitrate higher for short videos
+        if duration < 60:
+            max_bitrate_kb = min(16000, target_bitrate_kb * 1.2)
+        else:
+            max_bitrate_kb = min(12000, target_bitrate_kb)
+
+        # Apply limits but favor higher quality
+        video_bitrate_kb = min(max_bitrate_kb, max(min_bitrate_kb, video_bitrate_kb))
+
+        # For very short videos, ensure we use more of the available space
+        if duration < 30:
+            video_bitrate_kb = max(video_bitrate_kb, target_bitrate_kb * 0.9)
 
         return video_bitrate_kb
 

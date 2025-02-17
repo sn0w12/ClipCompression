@@ -58,7 +58,7 @@ if "%reduce_fps%"=="1" (
         -bufsize %video_bitrate%k ^
         -preset %preset% ^
         -rc:v vbr ^
-        -cq:v 23 ^
+        -cq:v 20 ^
         -r 30 ^
         -filter_complex "[0:a:0][0:a:1][0:a:2][0:a:3]amix=inputs=4:duration=first:weights=1 1 1 1[aout]" ^
         -map 0:v:0 ^
@@ -74,7 +74,7 @@ if "%reduce_fps%"=="1" (
         -bufsize %video_bitrate%k ^
         -preset %preset% ^
         -rc:v vbr ^
-        -cq:v 23 ^
+        -cq:v 20 ^
         -filter_complex "[0:a:0][0:a:1][0:a:2][0:a:3]amix=inputs=4:duration=first:weights=1 1 1 1[aout]" ^
         -map 0:v:0 ^
         -map "[aout]" ^
